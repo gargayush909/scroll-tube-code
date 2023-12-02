@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/video.js/7.11.7/video-js.min.css" rel="stylesheet" />
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/video.js/7.11.7/video.min.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/videojs-contrib-eme@3.8.0/dist/videojs-contrib-eme.js"></script>
+
+    <title>Test VideJS DRM</title>
+</head>
+<body>
+
+    <div style="margin: 50px auto;">
+        <video id="my-video" class="video-js"></video>
+    </div>
+
+    <script>
+        var player = videojs(
+            'my-video',
+            {
+                controls: true,
+                fluid: true,
+                html5: {
+                    vhs: {
+                        overrideNative: true
+                    }
+                }
+            },
+            function() {
+                var player = this;
+                player.eme();
+                player.src({
+                    src: 'https://cdn.bitmovin.com/content/assets/art-of-motion_drm/mpds/11331.mpd',
+                    type: 'application/dash+xml',
+                    keySystems: {
+                        'com.widevine.alpha': 'https://cwip-shaka-proxy.appspot.com/no_auth',
+                    }
+                });
+
+                // Define segments - an array of start times (in seconds)
+                var segments = [0, 30, 60, 90, 120]; // Define your segments here
+
+                // Function to scroll to a specific segment
+                function scrollToSegment(segmentIndex) {
+                    if (segments[segmentIndex]) {
+                        player.currentTime(segments[segmentIndex]);
+                    }
+                }
+
+                // Function to divide seekbar into segments
+                player.ready(function() {
+                    var seekBar = player.controlBar.progressControl.seekBar;
+
+                    segments.forEach(function(segment) {
+                        var segmentTime = segment / player.duration();
+                        var segmentDiv = document.createElement('div');
+                        segmentDiv.classList.add('segment-marker');
+                        segmentDiv.style.left = (segmentTime * 100) + '%';
+                        seekBar.el().appendChild(segmentDiv);
+                    });
+
+                    // Event listener for segment clicks
+                    seekBar.el().addEventListener('click', function(event) {
+                        if (event.target.classList.contains('segment-marker')) {
+                            var segmentIndex = Array.from(seekBar.el().children).indexOf(event.target);
+                            scrollToSegment(segmentIndex);
+                        }
+                    });
+                });
+            }
+        );
+    </script>
+
+    <style>
+        .vjs-progress-holder .segment-marker {
+            position: absolute;
+            bottom: 0;
+            width: 2px; /* Adjust segment marker width */
+            height: 100%;
+            background-color: red; /* Adjust segment marker color */
+            cursor: pointer;
+        }
+    </style>
+</body>
+</html>
